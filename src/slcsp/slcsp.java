@@ -16,7 +16,7 @@ class slcsp {
 	public static void main(String[] args) {
 		/*
 		 * Things to do:
-		 * 1) Need to retrieve and unpackage data from .csv files into 3 separate hash tables
+		 * DONE 1) Need to retrieve and unpackage data from .csv files into 3 separate hash tables
 		 * 		How to Map:
 		 * 			slscp: Map with Key = zipcode, Value = rate
 		 * 			zips: Map with Key = zipcode, Value = state, county_code, name, rate_area 
@@ -34,6 +34,7 @@ class slcsp {
 		 * 3) create loop that prints out the slcsp values taken from hash
 		 */
 		loadData();
+		calculateSLSCP();
 	}
 	
 	// Function that unpackages the .csv files within the data folder and populates their hash map or lists
@@ -53,7 +54,7 @@ class slcsp {
 			row = slscpCsvReader.readLine();
 			while ((row = slscpCsvReader.readLine()) != null) {
 			    String[] data = row.split(",");
-		    	slscpHash.put(data[0], "");
+		    	slscpHash.put(data[0].replaceFirst("^0+(?!$)", ""), "");
 			}
 			slscpCsvReader.close();
 			
@@ -74,7 +75,7 @@ class slcsp {
 		    	list2.add(data[4]); // rate_area
 		    	list.add(list2);
 			    
-			    zipsHash.put(data[0], list);
+			    zipsHash.put(data[0].replaceFirst("^0+(?!$)", ""), list);
 			}
 			zipsCsvReader.close();
 			
@@ -105,18 +106,56 @@ class slcsp {
 			e.printStackTrace();
 		}
 	}
-}
-
-// Key class that provides a pair of values to be used in the Multi Key Hash Map
-class Key {
 	
-	public String key1;
-	public String key2;
-	public String key3;
- 
-	public Key(String key1, String key2, String key3) {
-			this.key1 = key1;
-			this.key2 = key2;
-			this.key3 = key3;
+	// Function that calculates the 2nd cheapest rate per zip code
+	private static void calculateSLSCP() {
+		// Loops through every zipcode value within slscpHash
+		for (String slscpKey : slscpHash.keySet()) {
+			ArrayList<String> rateList = new ArrayList<String>();
+			double secondLowestRate = Double.MAX_VALUE;
+			double lowestRate = Double.MAX_VALUE;
+			
+			// Checks to see if the given zipcode is within the zipsHash
+			if (zipsHash.containsKey(slscpKey)) {
+				// Creating a list of keys to use to search plansHash
+				ArrayList<ArrayList<String>> zipsList = zipsHash.get(slscpKey);
+				ArrayList<ArrayList<String>> plansHashKeyList = new ArrayList<ArrayList<String>>();
+				for (ArrayList<String> zips : zipsList) {
+					ArrayList<String> plansHashKey = new ArrayList<String>();
+					plansHashKey.add(zips.get(0));
+					plansHashKey.add(zips.get(3));
+					plansHashKey.add("Silver");
+					plansHashKeyList.add(plansHashKey);
+				}
+				
+				// Searches the plansHash Map for all Values that correspond to Keys from the plansHashKeyList
+				for (ArrayList<String> plansHashKey : plansHashKeyList) {
+					// Checks to see if the given Key is within the plansHash
+					if (plansHash.containsKey(plansHashKey)) {
+						// All Values associated with the key will be stripped down to just rates to be stored in a list
+						for (ArrayList<String> plansHashValue : plansHash.get(plansHashKey)) {
+							rateList.add(plansHashValue.get(1));
+						}
+						
+						// Sifts through the list of rates to find and store the secondLowestRate
+						for (int i = 0; i < rateList.size(); i++) {
+							if (Double.parseDouble(rateList.get(i)) < lowestRate) {
+								secondLowestRate = lowestRate;
+								lowestRate = Double.parseDouble(rateList.get(i));
+							}
+							else if (Double.parseDouble(rateList.get(i)) < secondLowestRate && Double.parseDouble(rateList.get(i)) > lowestRate) {
+								secondLowestRate = Double.parseDouble(rateList.get(i));
+							}
+						}
+						// In case there is only one value in the list, the lowestRate will also be the secondLowestRate
+						if (secondLowestRate == Double.MAX_VALUE) {
+							secondLowestRate = lowestRate;
+						}
+						rateList.clear();
+					}
+				}
+			}
+			slscpHash.put(slscpKey, String.valueOf(secondLowestRate));
+		}
 	}
 }
