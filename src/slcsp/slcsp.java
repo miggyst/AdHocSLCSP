@@ -6,41 +6,25 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 class slcsp {
-	
-	private static HashMap<String, String> slscpHash = new HashMap<String, String>();
+	// private global variables
+	private static HashMap<String, String> slcspHash = new HashMap<String, String>();
 	private static HashMap<String, ArrayList<ArrayList<String>>> zipsHash = new HashMap<String, ArrayList<ArrayList<String>>>();
 	private static HashMap<ArrayList<String>, ArrayList<ArrayList<String>>> plansHash = new HashMap<ArrayList<String>, ArrayList<ArrayList<String>>>();
 	
+	// Main function that loads, calculates, and prints slcsp functionality
 	public static void main(String[] args) {
-		/*
-		 * Things to do:
-		 * DONE 1) Need to retrieve and unpackage data from .csv files into 3 separate hash tables
-		 * 		How to Map:
-		 * 			slscp: Map with Key = zipcode, Value = rate
-		 * 			zips: Map with Key = zipcode, Value = state, county_code, name, rate_area 
-		 * 			plans: Map with Key = state, rate_area, metal_level, Value = plan_id, rate
-		 * 2) go through the main slcsp.csv hash table one by one and search through other hashes to populate the hash.
-		 *      Requires Algorithm (The aim is to find the 2nd lowest SILVER PLAN)
-		 *           Algorithm goes as follows:
-		 *                take a zipcode from the slcspHash
-		 *                use that zipcode to find a list of zips from zipsHash
-		 *                for every list of zip take the state and rate_area to find a list of plans
-		 *                	for every list of plan, search for a list that has SILVER metal_level,
-		 *                		for every SILVER metal_level, save the rate onto a list
-		 *                sort the list in ascending order
-		 *                find the 2nd least expensive value in the list
-		 * 3) create loop that prints out the slcsp values taken from hash
-		 */
 		loadData();
-		calculateSLSCP();
+		calculateSLCSP();
+		printSLCSP();
 	}
 	
 	// Function that unpackages the .csv files within the data folder and populates their hash map or lists
 	private static void loadData() {
 		// Initialize Variables
-		File slscpFilePath = new File("./src/data/slcsp.csv");
+		File slcspFilePath = new File("./src/data/slcsp.csv");
 		File zipsFilePath = new File("./src/data/zips.csv");
 		File plansFilePath = new File("./src/data/plans.csv");
 		
@@ -50,17 +34,18 @@ class slcsp {
 			// Reads the values of the slcsp.csv file and inserts them into a Hash Map,
 			// if value in key-value pair is undetermined, use an empty string as a placeholder
 			// rows are made up of: zipcode, rate
-			BufferedReader slscpCsvReader = new BufferedReader(new FileReader(slscpFilePath));
-			row = slscpCsvReader.readLine();
-			while ((row = slscpCsvReader.readLine()) != null) {
+			BufferedReader slcspCsvReader = new BufferedReader(new FileReader(slcspFilePath));
+			row = slcspCsvReader.readLine(); // skips headers or the first line that acts as headers
+			while ((row = slcspCsvReader.readLine()) != null) {
 			    String[] data = row.split(",");
-		    	slscpHash.put(data[0].replaceFirst("^0+(?!$)", ""), "");
+		    	slcspHash.put(data[0].trim().replaceFirst("^0+(?!$)", "").toLowerCase(), "");
 			}
-			slscpCsvReader.close();
+			slcspCsvReader.close();
 			
 			// Reads the values of the zips.csv file and inserts them into a Multi Key Hash Map
 			// rows are made up of: zipcode, state, county_code, name, rate_area
 			BufferedReader zipsCsvReader = new BufferedReader(new FileReader(zipsFilePath));
+			row = zipsCsvReader.readLine(); // skips headers or the first line that acts as headers
 			while ((row = zipsCsvReader.readLine()) != null) {
 			    String[] data = row.split(",");
 			    
@@ -69,33 +54,34 @@ class slcsp {
 			    if (zipsHash.containsKey(data[0])) {
 			    	list = zipsHash.get(data[0]);
 			    }
-			    list2.add(data[1]); // state
-		    	list2.add(data[2]); // county_code
-		    	list2.add(data[3]); // name
-		    	list2.add(data[4]); // rate_area
+			    list2.add(data[1].toLowerCase().trim()); // state
+		    	list2.add(data[2].toLowerCase().trim()); // county_code
+		    	list2.add(data[3].toLowerCase().trim()); // name
+		    	list2.add(data[4].toLowerCase().trim()); // rate_area
 		    	list.add(list2);
 			    
-			    zipsHash.put(data[0].replaceFirst("^0+(?!$)", ""), list);
+			    zipsHash.put(data[0].trim().replaceFirst("^0+(?!$)", "").toLowerCase().trim(), list);
 			}
 			zipsCsvReader.close();
 			
 			// Reads the values of the plans.csv file and inserts them into a Hash Map
 			// rows are made up of: plan_id, state, metal_level, rate, rate_area
 			BufferedReader plansCsvReader = new BufferedReader(new FileReader(plansFilePath));
+			row = plansCsvReader.readLine(); // skips headers or the first line that acts as headers
 			while ((row = plansCsvReader.readLine()) != null) {
 				String[] data = row.split(",");
 				
 				ArrayList<String> key = new ArrayList<String>();
-				key.add(data[1]); // state
-				key.add(data[4]); // rate_area
-				key.add(data[2]); // metal_level
+				key.add(data[1].toLowerCase().trim()); // state
+				key.add(data[4].toLowerCase().trim()); // rate_area
+				key.add(data[2].toLowerCase().trim()); // metal_level
 				ArrayList<ArrayList<String>> list = new ArrayList<ArrayList<String>>();
 				ArrayList<String> list2 = new ArrayList<String>();
 				if (plansHash.containsKey(key)) {
 					list = plansHash.get(key);
 				}
-				list2.add(data[0]); // plan_id
-				list2.add(data[3]); // rate
+				list2.add(data[0].toLowerCase().trim()); // plan_id
+				list2.add(data[3].toLowerCase().trim()); // rate
 				list.add(list2);
 				
 				plansHash.put(key, list); // plan_id, list of plan info
@@ -108,23 +94,28 @@ class slcsp {
 	}
 	
 	// Function that calculates the 2nd cheapest rate per zip code
-	private static void calculateSLSCP() {
-		// Loops through every zipcode value within slscpHash
-		for (String slscpKey : slscpHash.keySet()) {
+	private static void calculateSLCSP() {
+		// Loops through every zipcode value within slcspHash
+		for (String slcspKey : slcspHash.keySet()) {
+			// Variable initialization, also resets the variables on loop
 			ArrayList<String> rateList = new ArrayList<String>();
+			ArrayList<String> zipcodeList = new ArrayList<String>();
+			
 			double secondLowestRate = Double.MAX_VALUE;
 			double lowestRate = Double.MAX_VALUE;
 			
+			Boolean isAmbiguous = false;
+			
 			// Checks to see if the given zipcode is within the zipsHash
-			if (zipsHash.containsKey(slscpKey)) {
+			if (zipsHash.containsKey(slcspKey)) {
 				// Creating a list of keys to use to search plansHash
-				ArrayList<ArrayList<String>> zipsList = zipsHash.get(slscpKey);
+				ArrayList<ArrayList<String>> zipsList = zipsHash.get(slcspKey);
 				ArrayList<ArrayList<String>> plansHashKeyList = new ArrayList<ArrayList<String>>();
 				for (ArrayList<String> zips : zipsList) {
 					ArrayList<String> plansHashKey = new ArrayList<String>();
 					plansHashKey.add(zips.get(0));
 					plansHashKey.add(zips.get(3));
-					plansHashKey.add("Silver");
+					plansHashKey.add("silver");
 					plansHashKeyList.add(plansHashKey);
 				}
 				
@@ -132,6 +123,15 @@ class slcsp {
 				for (ArrayList<String> plansHashKey : plansHashKeyList) {
 					// Checks to see if the given Key is within the plansHash
 					if (plansHash.containsKey(plansHashKey)) {
+						
+						// Checks for ambiguous zipcode to rate_area relationship.
+						// If there are multiple rate_areas corresponding to a particular zipcode, consider that zipcode ambiguous and set rate to blank ""
+						zipcodeList.add(plansHashKey.get(1));
+						if (zipcodeList.size() > 1 && !zipcodeList.get(zipcodeList.size()-2).equals(zipcodeList.get(zipcodeList.size()-1))) {
+							isAmbiguous = true;
+							break;
+						}
+						
 						// All Values associated with the key will be stripped down to just rates to be stored in a list
 						for (ArrayList<String> plansHashValue : plansHash.get(plansHashKey)) {
 							rateList.add(plansHashValue.get(1));
@@ -147,15 +147,27 @@ class slcsp {
 								secondLowestRate = Double.parseDouble(rateList.get(i));
 							}
 						}
-						// In case there is only one value in the list, the lowestRate will also be the secondLowestRate
-						if (secondLowestRate == Double.MAX_VALUE) {
-							secondLowestRate = lowestRate;
-						}
 						rateList.clear();
 					}
 				}
+				
+				// sets the value in the Key-Value pair to be the secondLowest or blank ""
+				// if the value is ambiguous due to conflicting corresponding rate_area or there isn't a second lowest rate, set to blank ""
+				if (isAmbiguous || secondLowestRate == Double.MAX_VALUE) {
+					slcspHash.put(slcspKey, "");
+				}
+				else {
+					slcspHash.put(slcspKey, String.valueOf(secondLowestRate));	
+				}
 			}
-			slscpHash.put(slscpKey, String.valueOf(secondLowestRate));
+		}
+	}
+	
+	// Function that prints the zipcode and the accompanying calculated second lowest rate
+	private static void printSLCSP() {
+		System.out.println("zipcode,rate");
+		for (Entry<String, String> slcspHash : slcspHash.entrySet()) {
+			System.out.println(slcspHash.getKey() + "," + slcspHash.getValue());
 		}
 	}
 }
