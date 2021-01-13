@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 
 class slcsp {
 	// private global variables
-	private static HashMap<String, String> slcspHash = new HashMap<String, String>();
+	private static HashMap<Integer, ArrayList<String>> slcspHash = new HashMap<Integer, ArrayList<String>>();
 	private static HashMap<String, ArrayList<ArrayList<String>>> zipsHash = new HashMap<String, ArrayList<ArrayList<String>>>();
 	private static HashMap<ArrayList<String>, ArrayList<ArrayList<String>>> plansHash = new HashMap<ArrayList<String>, ArrayList<ArrayList<String>>>();
 	
@@ -35,10 +35,16 @@ class slcsp {
 			// if value in key-value pair is undetermined, use an empty string as a placeholder
 			// rows are made up of: zipcode, rate
 			BufferedReader slcspCsvReader = new BufferedReader(new FileReader(slcspFilePath));
+			int rowCount = 1;
 			row = slcspCsvReader.readLine(); // skips headers or the first line that acts as headers
 			while ((row = slcspCsvReader.readLine()) != null) {
 			    String[] data = row.split(",");
-		    	slcspHash.put(data[0].trim().replaceFirst("^0+(?!$)", "").toLowerCase(), "");
+			    
+			    ArrayList<String> list = new ArrayList<String>();
+			    list.add(data[0].trim().replaceFirst("^0+(?!$)", "").toLowerCase()); // zipcode
+			    list.add(""); // rate
+		    	slcspHash.put(rowCount, list);
+		    	rowCount++;
 			}
 			slcspCsvReader.close();
 			
@@ -95,11 +101,15 @@ class slcsp {
 	
 	// Function that calculates the 2nd cheapest rate per zip code
 	private static void calculateSLCSP() {
+		// Initialize Variables
+		int rowCount = 1; // rowCount is used to keep the values in line with what is seen in the CSV file
+		
 		// Loops through every zipcode value within slcspHash
-		for (String slcspKey : slcspHash.keySet()) {
+		for (Integer slcspHashKey : slcspHash.keySet()) {//(String slcspKey : slcspHash.keySet()) {
 			// Variable initialization, also resets the variables on loop
 			ArrayList<String> rateList = new ArrayList<String>();
 			ArrayList<String> zipcodeList = new ArrayList<String>();
+			ArrayList<String> slcspHashList = new ArrayList<String>();
 			
 			double secondLowestRate = Double.MAX_VALUE;
 			double lowestRate = Double.MAX_VALUE;
@@ -107,9 +117,9 @@ class slcsp {
 			Boolean isAmbiguous = false;
 			
 			// Checks to see if the given zipcode is within the zipsHash
-			if (zipsHash.containsKey(slcspKey)) {
+			if (zipsHash.containsKey(slcspHash.get(slcspHashKey).get(0))) {
 				// Creating a list of keys to use to search plansHash
-				ArrayList<ArrayList<String>> zipsList = zipsHash.get(slcspKey);
+				ArrayList<ArrayList<String>> zipsList = zipsHash.get(slcspHash.get(slcspHashKey).get(0));
 				ArrayList<ArrayList<String>> plansHashKeyList = new ArrayList<ArrayList<String>>();
 				for (ArrayList<String> zips : zipsList) {
 					ArrayList<String> plansHashKey = new ArrayList<String>();
@@ -154,11 +164,15 @@ class slcsp {
 				// sets the value in the Key-Value pair to be the secondLowest or blank ""
 				// if the value is ambiguous due to conflicting corresponding rate_area or there isn't a second lowest rate, set to blank ""
 				if (isAmbiguous || secondLowestRate == Double.MAX_VALUE) {
-					slcspHash.put(slcspKey, "");
+					slcspHashList.add(slcspHash.get(slcspHashKey).get(0));
+					slcspHashList.add("");
 				}
 				else {
-					slcspHash.put(slcspKey, String.valueOf(secondLowestRate));	
+					slcspHashList.add(slcspHash.get(slcspHashKey).get(0));
+					slcspHashList.add(String.valueOf(secondLowestRate));
 				}
+				slcspHash.put(rowCount, slcspHashList);
+				rowCount++;
 			}
 		}
 	}
@@ -166,8 +180,8 @@ class slcsp {
 	// Function that prints the zipcode and the accompanying calculated second lowest rate
 	private static void printSLCSP() {
 		System.out.println("zipcode,rate");
-		for (Entry<String, String> slcspHash : slcspHash.entrySet()) {
-			System.out.println(slcspHash.getKey() + "," + slcspHash.getValue());
+		for (Integer slcspHashKey : slcspHash.keySet()) {
+			System.out.println(slcspHash.get(slcspHashKey).get(0) + "," + slcspHash.get(slcspHashKey).get(1));
 		}
 	}
 }
