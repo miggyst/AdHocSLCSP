@@ -6,9 +6,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map.Entry;
 
-class slcsp {
+public class slcsp {
 	// private global variables
 	private static HashMap<Integer, ArrayList<String>> slcspHash = new HashMap<Integer, ArrayList<String>>();
 	private static HashMap<String, ArrayList<ArrayList<String>>> zipsHash = new HashMap<String, ArrayList<ArrayList<String>>>();

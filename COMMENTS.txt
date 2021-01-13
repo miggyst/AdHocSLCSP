@@ -1,0 +1,18 @@
+There are two ways to run the program, you can either manually compile and run or you could run the script that I've attached (named run.sh)
+
+Option 1:
+	- For ease of use, I've created a simple script to compile and run my program
+	- Open a command like prompt
+	- Navigate your way to the project folder where bin/ and src/ can be found
+	- Simple type and run: ./run.sh
+	- Watch it compile, run and output the code according to the homework prompt
+Option 2:
+	- Just in case Option 1 didn't work for some reason...
+	- Open a command line prompt
+	- Navigate your way to the project folder where bin/ and src/ can be found
+	- To compile, type and run: javac -d bin/ -cp src src/slcsp/slcsp.java
+		- This will compile the code and place the class file into the bin/ folder
+	- To run the code, type and run: java -cp bin slcsp.slcsp
+	- Watch it run and output the code according to the homework prompt
+
+I hope that you enjoy looking through my code!
